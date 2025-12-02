@@ -156,8 +156,8 @@ export default apiInitializer("0.11.1", (api) => {
         return;
       }
 
-      // Update the title to include the parent category name
-      bannerTitle.textContent = `${parentCategory.name}${separator}${category.name}`;
+      // Update the title to include the parent category name (space only, no separator)
+      bannerTitle.textContent = `${parentCategory.name} ${category.name}`;
     } catch (error) {
       console.error("Prefix Parent Category Names: Error in updateCategoryBannerTitle", error);
     }
