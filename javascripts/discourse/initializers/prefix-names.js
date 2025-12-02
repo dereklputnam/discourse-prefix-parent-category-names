@@ -10,6 +10,9 @@ export default apiInitializer("0.11.1", (api) => {
     return;
   }
 
+  // Get separator from settings
+  const separator = settings.separator || " > ";
+
   // Function to update sidebar category names with parent category names
   const updateSidebarCategoryNames = () => {
     // Get all categories from Discourse
@@ -61,7 +64,7 @@ export default apiInitializer("0.11.1", (api) => {
       // Check if text already contains the parent prefix to avoid duplication
       if (currentText === categoryName) {
         // Update the name to include the parent category name
-        nameSpan.textContent = `${parentCategory.name} ${categoryName}`;
+        nameSpan.textContent = `${parentCategory.name}${separator}${categoryName}`;
       }
     });
   };
@@ -136,22 +139,94 @@ export default apiInitializer("0.11.1", (api) => {
       return;
     }
     
-    
+
     // Update the title to include the parent category name
-    bannerTitle.textContent = `${parentCategory.name} ${category.name}`;
+    bannerTitle.textContent = `${parentCategory.name}${separator}${category.name}`;
+  };
+
+  // Function to update category badges in topic lists
+  const updateTopicListCategories = () => {
+    // Get all categories from Discourse
+    const siteCategories = api.container.lookup("site:main").categories;
+    if (!siteCategories || !siteCategories.length) {
+      return;
+    }
+
+    // Find all category badge links in topic lists
+    const categoryBadges = document.querySelectorAll(".category-name, .badge-category__name, .topic-category .badge-wrapper span");
+
+    categoryBadges.forEach(badge => {
+      // Try to find category ID from various attributes
+      let categoryId = null;
+
+      // Check parent link's href
+      const parentLink = badge.closest("a");
+      if (parentLink) {
+        const href = parentLink.getAttribute("href");
+        if (href && href.includes("/c/")) {
+          const match = href.match(/\/c\/(?:.*\/)?(\d+)/);
+          if (match && match[1]) {
+            categoryId = parseInt(match[1], 10);
+          }
+        }
+      }
+
+      // Check data attributes
+      if (!categoryId) {
+        const wrapper = badge.closest("[data-category-id]");
+        if (wrapper) {
+          categoryId = parseInt(wrapper.getAttribute("data-category-id"), 10);
+        }
+      }
+
+      if (!categoryId || !enabledCategories.includes(categoryId)) return;
+
+      // Find the category
+      const category = siteCategories.find(cat => cat.id === categoryId);
+      if (!category || !category.parent_category_id) return;
+
+      // Find the parent category
+      const parentCategory = siteCategories.find(cat => cat.id === category.parent_category_id);
+      if (!parentCategory) return;
+
+      // Get current text
+      const currentText = badge.textContent.trim();
+      const categoryName = category.name;
+
+      // If already has parent prefix, skip
+      if (currentText.startsWith(parentCategory.name)) return;
+
+      // Update with parent prefix
+      if (currentText === categoryName) {
+        badge.textContent = `${parentCategory.name}${separator}${categoryName}`;
+      }
+    });
   };
 
   // Function to apply all updates
   const applyUpdates = () => {
     updateSidebarCategoryNames();
     updateCategoryBannerTitle();
+    updateTopicListCategories();
   };
 
   // Run once on initialization with a delay to ensure DOM is ready
   applyUpdates();
 
   // Update when page changes
-  api.onPageChange(() => {    
+  api.onPageChange(() => {
     applyUpdates();
+  });
+
+  // Watch for dynamically loaded content
+  const observer = new MutationObserver(() => {
+    applyUpdates();
+  });
+
+  // Observe changes to the main content area
+  const targetNode = document.querySelector("#main-outlet") || document.body;
+  observer.observe(targetNode, {
+    childList: true,
+    subtree: true
   });
 });

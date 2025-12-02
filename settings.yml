@@ -3,3 +3,8 @@ enabled_categories:
   list_type: category
   default: ""
   description: "Select categories that should have their parent category name added as a prefix to the sidebar and banners."
+
+separator:
+  type: string
+  default: " > "
+  description: "Separator between parent category and child category names (e.g., ' > ', ' / ', ': ')"
