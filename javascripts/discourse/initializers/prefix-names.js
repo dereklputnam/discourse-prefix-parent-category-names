@@ -176,8 +176,13 @@ export default apiInitializer("0.11.1", (api) => {
         return;
       }
 
-      // Find all category badge links in topic lists
-      const categoryBadges = document.querySelectorAll(".category-name, .badge-category__name, .topic-category .badge-wrapper span");
+      // Find all category badge links ONLY in topic lists (exclude category boxes)
+      // Target badges within topic list items, not in category box sections
+      const categoryBadges = document.querySelectorAll(
+        ".topic-list-item .badge-category__name, " +
+        ".topic-list tbody .badge-category__name, " +
+        ".latest-topic-list-item .badge-category__name"
+      );
 
       categoryBadges.forEach(badge => {
         if (!badge) return;
@@ -234,7 +239,7 @@ export default apiInitializer("0.11.1", (api) => {
   // Function to apply all updates with error handling
   const applyUpdates = () => {
     try {
-      updateSidebarCategoryNames();
+      // updateSidebarCategoryNames(); // Disabled for now - focusing on topic list
       updateCategoryBannerTitle();
       updateTopicListCategories();
     } catch (error) {
