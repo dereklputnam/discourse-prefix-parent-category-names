@@ -1,6 +1,12 @@
 import { apiInitializer } from "discourse/lib/api";
 
 export default apiInitializer("0.11.1", (api) => {
+  // Check if settings is available
+  if (typeof settings === "undefined") {
+    console.warn("Prefix Parent Category Names: settings not available");
+    return;
+  }
+
   // Parse enabled categories from settings
   const enabledCategories = settings.enabled_categories
     ? settings.enabled_categories.split("|").map(id => parseInt(id, 10)).filter(id => !isNaN(id))
@@ -15,16 +21,22 @@ export default apiInitializer("0.11.1", (api) => {
 
   // Function to update sidebar category names with parent category names
   const updateSidebarCategoryNames = () => {
-    // Get all categories from Discourse
-    const siteCategories = api.container.lookup("site:main").categories;
-    if (!siteCategories || !siteCategories.length) {
-      return;
-    }
-    
-    // Find all sidebar category links
-    const sidebarCategoryLinks = document.querySelectorAll(".sidebar-section-link-wrapper a.sidebar-section-link");
-    
-    sidebarCategoryLinks.forEach(link => {
+    try {
+      // Get all categories from Discourse
+      const site = api.container.lookup("site:main");
+      if (!site || !site.categories) {
+        return;
+      }
+      const siteCategories = site.categories;
+      if (!siteCategories || !siteCategories.length) {
+        return;
+      }
+
+      // Find all sidebar category links
+      const sidebarCategoryLinks = document.querySelectorAll(".sidebar-section-link-wrapper a.sidebar-section-link");
+
+      sidebarCategoryLinks.forEach(link => {
+        if (!link) return;
       // Extract category ID from the link's href attribute
       const href = link.getAttribute("href");
       if (!href || !href.includes("/c/")) return;
@@ -61,12 +73,15 @@ export default apiInitializer("0.11.1", (api) => {
       // If currentText already includes the parent name, don't add it again
       if (currentText.startsWith(parentCategory.name)) return;
       
-      // Check if text already contains the parent prefix to avoid duplication
-      if (currentText === categoryName) {
-        // Update the name to include the parent category name
-        nameSpan.textContent = `${parentCategory.name}${separator}${categoryName}`;
-      }
-    });
+        // Check if text already contains the parent prefix to avoid duplication
+        if (currentText === categoryName) {
+          // Update the name to include the parent category name
+          nameSpan.textContent = `${parentCategory.name}${separator}${categoryName}`;
+        }
+      });
+    } catch (error) {
+      console.error("Prefix Parent Category Names: Error in updateSidebarCategoryNames", error);
+    }
   };
 
   // Store the original banner texts (as a global in-memory cache)
@@ -74,17 +89,15 @@ export default apiInitializer("0.11.1", (api) => {
   
   // Function to update the category banner title
   const updateCategoryBannerTitle = () => {
-    // We need to verify we're on a category page first
-    const isCategory = document.body.classList.contains("category");
-    
-    // If we're not on a category page, exit
-    if (!isCategory) {
-      return;
-    }
-    
-    // Get category info from the discovery service
-    const discoveryService = api.container.lookup("service:discovery");
-    const category = discoveryService?.category;
+    try {
+      // We need to verify we're on a category page first
+      if (!document.body || !document.body.classList.contains("category")) {
+        return;
+      }
+
+      // Get category info from the discovery service
+      const discoveryService = api.container.lookup("service:discovery");
+      const category = discoveryService?.category;
     
     if (!category) {
       return;
@@ -130,32 +143,44 @@ export default apiInitializer("0.11.1", (api) => {
     if (!category.parent_category_id) {
       return;
     }
-    
-    // Get all categories from Discourse
-    const siteCategories = api.container.lookup("site:main").categories;
-    const parentCategory = siteCategories.find(cat => cat.id === category.parent_category_id);
-    
-    if (!parentCategory) {
-      return;
-    }
-    
 
-    // Update the title to include the parent category name
-    bannerTitle.textContent = `${parentCategory.name}${separator}${category.name}`;
+      // Get all categories from Discourse
+      const site = api.container.lookup("site:main");
+      if (!site || !site.categories) {
+        return;
+      }
+      const siteCategories = site.categories;
+      const parentCategory = siteCategories.find(cat => cat && cat.id === category.parent_category_id);
+
+      if (!parentCategory) {
+        return;
+      }
+
+      // Update the title to include the parent category name
+      bannerTitle.textContent = `${parentCategory.name}${separator}${category.name}`;
+    } catch (error) {
+      console.error("Prefix Parent Category Names: Error in updateCategoryBannerTitle", error);
+    }
   };
 
   // Function to update category badges in topic lists
   const updateTopicListCategories = () => {
-    // Get all categories from Discourse
-    const siteCategories = api.container.lookup("site:main").categories;
-    if (!siteCategories || !siteCategories.length) {
-      return;
-    }
+    try {
+      // Get all categories from Discourse
+      const site = api.container.lookup("site:main");
+      if (!site || !site.categories) {
+        return;
+      }
+      const siteCategories = site.categories;
+      if (!siteCategories || !siteCategories.length) {
+        return;
+      }
 
-    // Find all category badge links in topic lists
-    const categoryBadges = document.querySelectorAll(".category-name, .badge-category__name, .topic-category .badge-wrapper span");
+      // Find all category badge links in topic lists
+      const categoryBadges = document.querySelectorAll(".category-name, .badge-category__name, .topic-category .badge-wrapper span");
 
-    categoryBadges.forEach(badge => {
+      categoryBadges.forEach(badge => {
+        if (!badge) return;
       // Try to find category ID from various attributes
       let categoryId = null;
 
@@ -196,21 +221,38 @@ export default apiInitializer("0.11.1", (api) => {
       // If already has parent prefix, skip
       if (currentText.startsWith(parentCategory.name)) return;
 
-      // Update with parent prefix
-      if (currentText === categoryName) {
-        badge.textContent = `${parentCategory.name}${separator}${categoryName}`;
-      }
-    });
+        // Update with parent prefix
+        if (currentText === categoryName) {
+          badge.textContent = `${parentCategory.name}${separator}${categoryName}`;
+        }
+      });
+    } catch (error) {
+      console.error("Prefix Parent Category Names: Error in updateTopicListCategories", error);
+    }
   };
 
-  // Function to apply all updates
+  // Function to apply all updates with error handling
   const applyUpdates = () => {
-    updateSidebarCategoryNames();
-    updateCategoryBannerTitle();
-    updateTopicListCategories();
+    try {
+      updateSidebarCategoryNames();
+      updateCategoryBannerTitle();
+      updateTopicListCategories();
+    } catch (error) {
+      console.error("Prefix Parent Category Names: Error applying updates", error);
+    }
   };
 
-  // Run once on initialization with a delay to ensure DOM is ready
+  // Throttle function to limit how often updates run
+  let throttleTimer = null;
+  const throttledApplyUpdates = () => {
+    if (throttleTimer) return;
+    throttleTimer = setTimeout(() => {
+      applyUpdates();
+      throttleTimer = null;
+    }, 100);
+  };
+
+  // Run once on initialization
   applyUpdates();
 
   // Update when page changes
@@ -218,15 +260,17 @@ export default apiInitializer("0.11.1", (api) => {
     applyUpdates();
   });
 
-  // Watch for dynamically loaded content
+  // Watch for dynamically loaded content with throttling
   const observer = new MutationObserver(() => {
-    applyUpdates();
+    throttledApplyUpdates();
   });
 
   // Observe changes to the main content area
-  const targetNode = document.querySelector("#main-outlet") || document.body;
-  observer.observe(targetNode, {
-    childList: true,
-    subtree: true
-  });
+  const targetNode = document.querySelector("#main-outlet");
+  if (targetNode) {
+    observer.observe(targetNode, {
+      childList: true,
+      subtree: true
+    });
+  }
 });
