@@ -75,8 +75,8 @@ export default apiInitializer("0.11.1", (api) => {
       
         // Check if text already contains the parent prefix to avoid duplication
         if (currentText === categoryName) {
-          // Update the name to include the parent category name (no separator for sidebar)
-          nameSpan.textContent = `${parentCategory.name}${categoryName}`;
+          // Update the name to include the parent category name (space only, no separator for sidebar)
+          nameSpan.textContent = `${parentCategory.name} ${categoryName}`;
         }
       });
     } catch (error) {
