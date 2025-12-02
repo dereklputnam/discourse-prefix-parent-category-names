@@ -75,8 +75,8 @@ export default apiInitializer("0.11.1", (api) => {
       
         // Check if text already contains the parent prefix to avoid duplication
         if (currentText === categoryName) {
-          // Update the name to include the parent category name
-          nameSpan.textContent = `${parentCategory.name}${separator}${categoryName}`;
+          // Update the name to include the parent category name (no separator for sidebar)
+          nameSpan.textContent = `${parentCategory.name}${categoryName}`;
         }
       });
     } catch (error) {
@@ -239,7 +239,7 @@ export default apiInitializer("0.11.1", (api) => {
   // Function to apply all updates with error handling
   const applyUpdates = () => {
     try {
-      // updateSidebarCategoryNames(); // Disabled for now - focusing on topic list
+      updateSidebarCategoryNames(); // Concatenates parent+child without separator
       updateCategoryBannerTitle();
       updateTopicListCategories();
     } catch (error) {
