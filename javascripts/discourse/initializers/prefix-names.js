@@ -23,7 +23,7 @@ export default apiInitializer("0.11.1", (api) => {
   const updateSidebarCategoryNames = () => {
     try {
       // Get all categories from Discourse
-      const site = api.container.lookup("site:main");
+      const site = api.container.lookup("service:site");
       if (!site || !site.categories) {
         return;
       }
@@ -145,7 +145,7 @@ export default apiInitializer("0.11.1", (api) => {
     }
 
       // Get all categories from Discourse
-      const site = api.container.lookup("site:main");
+      const site = api.container.lookup("service:site");
       if (!site || !site.categories) {
         return;
       }
@@ -167,7 +167,7 @@ export default apiInitializer("0.11.1", (api) => {
   const updateTopicListCategories = () => {
     try {
       // Get all categories from Discourse
-      const site = api.container.lookup("site:main");
+      const site = api.container.lookup("service:site");
       if (!site || !site.categories) {
         return;
       }
